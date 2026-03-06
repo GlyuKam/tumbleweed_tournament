@@ -428,7 +428,7 @@ local fns = {
             target:DoTaskInTime(0.5,function() target.Physics:Stop() end)
             target.Transform:SetRotation(attacker.Transform:GetRotation())
             attacker:AddTag("noknockback")
-            attacker:DoTaskInTime(5,function() attacker:RemoveTag("noknockback") end)
+            attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
         end
     end,
 
@@ -463,7 +463,7 @@ local fns = {
             target:DoTaskInTime(0.5,function() target.Physics:Stop() end)
             target.Transform:SetRotation(attacker.Transform:GetRotation())
             attacker:AddTag("noknockback")
-            attacker:DoTaskInTime(5,function() attacker:RemoveTag("noknockback") end)
+            attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
         end
     end,
 
@@ -475,7 +475,7 @@ local fns = {
             RemovePhysicsColliders(target)
             target:DoTaskInTime(0.5,function() target.Physics:Stop() ChangeToCharacterPhysics(target) end)
             attacker:AddTag("noknockback")
-            attacker:DoTaskInTime(10,function() attacker:RemoveTag("noknockback") end)
+            attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
         end
     end,
 
@@ -538,7 +538,7 @@ for book,value in pairs(books) do
                 target:DoTaskInTime(0.5,function() target.Physics:Stop() end)
                 target.Transform:SetRotation(attacker.Transform:GetRotation())
                 attacker:AddTag("noknockback")
-                attacker:DoTaskInTime(5,function() attacker:RemoveTag("noknockback") end)
+                attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
             end
         end)
 
