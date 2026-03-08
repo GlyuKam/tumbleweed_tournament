@@ -34,7 +34,7 @@ for _,file in pairs(reworks) do
     modimport("reworks/prefabs/"..file)
 end
 
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WINONA     = {"winona_remote"}
+-- TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WINONA     = {"winona_remote"}
 TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WURT       = {"trident"}
 TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WEBBER     = {"spidereggsack","monstermeat","monstermeat"}
 TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WARLY      = {"glasscutter","portablecookpot_item","portablespicer_item"}
@@ -64,6 +64,42 @@ TUNING.ARMORBRAMBLE_DMG_PLANAR_UPGRADE = 0
 TUNING.TENTACLE_HEALTH = TUNING.TENTACLE_HEALTH/5
 
 --====================== PREFABS ================================================================
+
+AddPlayerPostInit(function(inst)
+    if not inst then return end
+        inst:DoTaskInTime(2, function()
+        TheCamera:SetExtraMaxDistance(55)
+    end)
+end)
+
+local X_POS = -800
+local Roles = require "widgets/wiga_widget"
+AddClassPostConstruct("widgets/controls", function(self)
+    if self.owner.prefab == "wathgrithr" then
+        self.roles = self.inv:AddChild(Roles(self.owner))
+        self.roles:SetPosition(0, 0)
+        self.roles:MoveToBack()
+
+
+        if self.owner.currentmask == "mask_queenhat" then
+            self.roles.b1:SetPosition(X_POS+self.roles.b1.x,200)
+        elseif self.owner.currentmask == "mask_foolhat" then
+            self.roles.b2:SetPosition(X_POS+self.roles.b2.x,200)
+        elseif self.owner.currentmask == "mask_treehat" then
+            self.roles.b3:SetPosition(X_POS+self.roles.b3.x,200)
+        end
+    end
+end)
+
+
+local function changerole(inst,role)
+    if inst.components.rolemanager then
+        print("rpc prinyat")
+        inst.components.rolemanager:SetRole(role)
+    end
+end
+
+AddModRPCHandler("ROLES","CHANGEROLE",changerole)
 
 AddPlayerPostInit(function(inst)
     inst.iframes = false 

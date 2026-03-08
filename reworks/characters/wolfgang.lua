@@ -109,6 +109,7 @@ local function OnThrownHit(inst, attacker, target)
     
     inst.components.weapon.damage = olddamage
 
+    attacker.components.hunger:DoDelta(-25)
 
     SpawnPrefab("round_puff_fx_sm").Transform:SetPosition(inst.Transform:GetWorldPosition())
     inst.AnimState:PlayAnimation("land")
@@ -215,10 +216,10 @@ for _,bell in pairs(dumbbels) do
     end)
 end
 
-AddPrefabPostInit("wolfgang",function(inst) 
-    inst:DoPeriodicTask(1,function()
-        if inst.components.hunger then
-            inst.components.hunger:DoDelta(-0.5)
-        end
-    end)
-end)
+-- AddPrefabPostInit("wolfgang",function(inst) 
+--     inst:DoPeriodicTask(1,function()
+--         if inst.components.hunger then
+--             inst.components.hunger:DoDelta(-0.5)
+--         end
+--     end)
+-- end)

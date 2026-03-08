@@ -3,3 +3,5 @@ AddPrefabPostInit("winona_catapult",function(inst)
         inst:RemoveComponent("burnable")
     end
 end)
+
+TUNING.TRAP_VINES_DURATION = 10
