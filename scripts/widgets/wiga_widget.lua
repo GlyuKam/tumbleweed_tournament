@@ -3,8 +3,7 @@ local Text = require "widgets/text"
 local ImageButton = require "widgets/imagebutton"
 
 local BUTTON_SCALE = 0.75
-local COOLDOWN = 10
-local X_POS = -785
+local X_POS = 840
 
 local Roles = Class(Widget, function(self, owner)
     Widget._ctor(self, "Roles")
@@ -16,8 +15,6 @@ local Roles = Class(Widget, function(self, owner)
     self.b1 = self.root:AddChild(self:MakeRoleButton("mask_queenhat",0))
     self.b2 = self.root:AddChild(self:MakeRoleButton("mask_foolhat",120))
     self.b3 = self.root:AddChild(self:MakeRoleButton("mask_treehat",240))
-
-    self.cooldown = false
 
     self.buttons = {
         self.b1,
@@ -35,17 +32,14 @@ function Roles:MakeRoleButton(role,x)
     b.focus_scale = nil
     b:SetPosition(X_POS+b.x, 200)
     b:SetOnClick(function()
-        if not self.cooldown then
+        if not self.owner.components.net_role.cooldown:value() then
             for _,button in pairs(self.buttons) do
                 button:SetPosition(X_POS+button.x,200)
             end
             b:SetPosition(X_POS+b.x,250)
-            self.cooldown = true
-            self.owner:DoTaskInTime(COOLDOWN,function() self.cooldown = false end)
-            print("rpc otpravlen")
             SendModRPCToServer(GetModRPC("ROLES","CHANGEROLE"),role)
         else
-            self.owner.components.talker:Say("nuh uh")
+            self.owner.components.talker:Say("Я ещё не выжала весь потенциал этой роли!")
         end
     end)
 

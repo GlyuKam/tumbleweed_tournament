@@ -8,14 +8,6 @@ local function QueenFn(inst)
 end
 
 -- local function FoolFn(inst)
---     -- local fx = SpawnAt("cane_harlequin_fx",inst)
---     if inst.components.locomotor and inst.components.rolemanager then
---         local rm = inst.components.rolemanager
---         if rm.mult>1.05 then
---             rm.mult = rm.mult-0.05
---             inst.components.locomotor.externalspeedmultiplier = rm.mult
---         end
---     end
 -- end
 
 local function TreeFn(inst)
@@ -26,14 +18,31 @@ local function TreeFn(inst)
         for i, attacker in ipairs(attackers) do
             if attacker.components.combat and attacker.sg and attacker~=inst then
                 SpawnAt("lucy_transform_fx",attacker)
-                attacker:ForceFacePoint(pos.x,pos.y,pos.z)
-                attacker.sg:Stop()
-                attacker:DoTaskIntime(0.1,attacker.sg:Start() end)
-                attacker.Physics:SetMotorVel(5,0,0)
                 attacker.components.combat:SetTarget(inst)
             end
         end
 
+    end
+end
+
+local function onattacked(inst,data)
+    local fx = SpawnPrefab("bramblefx_armor")
+    fx.entity:SetParent(inst.entity)
+    if data.attacker and data.attacker.components.locomotor then
+        local attacker = data.attacker
+        if attacker.slowfn~=nil then
+            attacker.slowfn:Cancel()
+            attacker.vinefx:Remove()
+        end
+        local speed = attacker.components.locomotor.externalspeedmultiplier
+        attacker.vinefx = SpawnPrefab("wormwood_vined_debuff")
+        attacker.components.locomotor.externalspeedmultiplier = speed*0.5
+        attacker.vinefx.entity:SetParent(attacker.entity)
+        attacker.slowfn = attacker:DoTaskInTime(10,function()
+            attacker.components.locomotor.externalspeedmultiplier = speed
+            attacker.vinefx.AnimState:PlayAnimation("spike_pst")
+            attacker.vinefx:ListenForEvent("animover", inst.Remove)
+        end)
     end
 end
 
@@ -46,7 +55,7 @@ local rolesfn = {
         local fx = SpawnAt("crab_king_shine",inst)
         fx.Transform:SetScale(2,2,2)
         inst.crown.AnimState:SetAddColour(0.5,0,0,0.75)
-        
+        inst.components.locomotor.externalspeedmultiplier = 1.1
 
         inst._queentask = nil
         inst._queentask = inst:DoPeriodicTask(2,function()
@@ -72,11 +81,8 @@ local rolesfn = {
 
         inst._fooltask = nil
 
-        inst.components.locomotor.externalspeedmultiplier = 1.5
+        inst.components.locomotor.externalspeedmultiplier = 1.3
         inst.components.combat.externaldamagetakenmultipliers:SetModifier(inst, 4)
-        -- inst._fooltask = inst:DoPeriodicTask(1,function()
-        --     FoolFn(inst)
-        -- end)
         
     end,
     mask_treehat = function(inst)
@@ -84,12 +90,10 @@ local rolesfn = {
 
         inst.currentmask = "mask_treehat"
 
-        inst.components.rolemanager.mult = 0.05
         inst.armorpen = 2
-
-        inst.components.locomotor.externalspeedmultiplier = 0.85
-        inst.components.health:SetAbsorptionAmount(0.75)
-
+        inst.components.combat.externaldamagemultipliers:SetModifier(inst, 0.85)
+        
+        inst:ListenForEvent("attacked", onattacked)
         TreeFn(inst)
         inst._treetask = inst:DoPeriodicTask(5,function()
             TreeFn(inst)
@@ -112,6 +116,7 @@ end)
 
 function RoleManager:SetCrown()
     self.owner.crown = SpawnPrefab("cotl_trinket")
+    self.owner.crown.entity:AddSoundEmitter()
     self.owner.crown.entity:SetParent(self.owner.entity)
     self.owner.crown.Transform:SetPosition(0,3.5,0)
     self.owner.crown.AnimState:SetMultColour(0,0,0,0.75)
@@ -135,6 +140,7 @@ function RoleManager:ClearRoles()
     self.owner:RemoveEventCallback("onattackother", QueenFn)
     self.mult = 1
 
+    self.owner:RemoveEventCallback("attacked", onattacked)
     self.owner.components.locomotor.externalspeedmultiplier = 1
     self.owner.components.combat.externaldamagetakenmultipliers:SetModifier(self.owner, 1)
     self.owner.components.combat.externaldamagemultipliers:SetModifier(self.owner, 1)
@@ -142,10 +148,21 @@ function RoleManager:ClearRoles()
     self.owner.components.health:SetAbsorptionAmount(0)
 end
 
+local COOLDOWN = 20
+
 function RoleManager:SetRole(role)
     local fn = rolesfn[role]
     if fn then
         fn(self.owner)
+        self.owner.components.net_role.cooldown:set(true)
+        local crown = self.owner.crown
+        crown.AnimState:SetMultColour(0,0,0,0.75)
+        crown.cooldown = crown:DoTaskInTime(COOLDOWN,function() 
+            SpawnAt("crab_king_shine",crown)
+            crown.AnimState:SetMultColour(1,1,1,0.75)
+            crown.SoundEmitter:PlaySound("hookline_2/creatures/boss/crabking/gem_place")
+            self.owner.components.net_role.cooldown:set(false)
+        end)
     end
 end
 

@@ -1,4 +1,5 @@
 AddPrefabPostInit("wathgrithr",function(inst)
+    inst:AddComponent("net_role")
 
     if TheWorld.ismastersim then
         inst:AddComponent("rolemanager")

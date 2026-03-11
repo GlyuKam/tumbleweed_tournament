@@ -1,7 +1,7 @@
 name = "Tumbleweed tweaks"
 description = [[ RNG ЧИСТИЛИЩЕ]]
 author = "Тот Самый ГлюК, Potatishe"
-version = "1.1.3.1"
+version = "1.1.3.4"
 forumthread = ""
 dst_compatible = true
 dont_starve_compatible = false
@@ -12,7 +12,7 @@ client_only_mod = false
 api_version = 10
 
 icon_atlas = "modicon.xml"
-icon = "modicon.tex"
+icon = "modicon.png"
 
 priority = 1
 

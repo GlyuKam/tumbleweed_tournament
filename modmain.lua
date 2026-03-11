@@ -23,7 +23,8 @@ local available_chars = {
 local reworks = {
     "axes",
     "bosses",
-    "books"
+    "books",
+    "other",
 }
 
 for _,char in pairs(available_chars) do
@@ -34,7 +35,7 @@ for _,file in pairs(reworks) do
     modimport("reworks/prefabs/"..file)
 end
 
--- TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WINONA     = {"winona_remote"}
+TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WINONA     = {"winona_remote"}
 TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WURT       = {"trident"}
 TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WEBBER     = {"spidereggsack","monstermeat","monstermeat"}
 TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WARLY      = {"glasscutter","portablecookpot_item","portablespicer_item"}
@@ -58,43 +59,25 @@ TUNING.YELLOWSTAFF_STAR_DURATION = 5*60
 TUNING.OPALSTAFF_STAR_DURATION = 5*60
 
 TUNING.WORMWOOD_ROOT_TIME = 0.5
-TUNING.ARMORBRAMBLE_DMG = 0
-TUNING.ARMORBRAMBLE_DMG_PLANAR_UPGRADE = 0
 
 TUNING.TENTACLE_HEALTH = TUNING.TENTACLE_HEALTH/5
 
 --====================== PREFABS ================================================================
 
-AddPlayerPostInit(function(inst)
-    if not inst then return end
-        inst:DoTaskInTime(2, function()
-        TheCamera:SetExtraMaxDistance(55)
-    end)
-end)
 
-local X_POS = -800
 local Roles = require "widgets/wiga_widget"
+
 AddClassPostConstruct("widgets/controls", function(self)
     if self.owner.prefab == "wathgrithr" then
         self.roles = self.inv:AddChild(Roles(self.owner))
         self.roles:SetPosition(0, 0)
         self.roles:MoveToBack()
-
-
-        if self.owner.currentmask == "mask_queenhat" then
-            self.roles.b1:SetPosition(X_POS+self.roles.b1.x,200)
-        elseif self.owner.currentmask == "mask_foolhat" then
-            self.roles.b2:SetPosition(X_POS+self.roles.b2.x,200)
-        elseif self.owner.currentmask == "mask_treehat" then
-            self.roles.b3:SetPosition(X_POS+self.roles.b3.x,200)
-        end
     end
 end)
 
 
 local function changerole(inst,role)
-    if inst.components.rolemanager then
-        print("rpc prinyat")
+    if inst.components.rolemanager and inst.components.net_role then
         inst.components.rolemanager:SetRole(role)
     end
 end
@@ -102,37 +85,26 @@ end
 AddModRPCHandler("ROLES","CHANGEROLE",changerole)
 
 AddPlayerPostInit(function(inst)
-    inst.iframes = false 
+
+    -- if not inst then return end
+    --     inst:DoTaskInTime(2, function()
+    --     TheCamera:SetExtraMaxDistance(55)
+    -- end)
+
+    inst:AddTag("bramble_resistant")
 
     if inst.components.grogginess then
         inst.components.grogginess.resistance = 100
     end
     inst:ListenForEvent("respawnfromghost",function()
-        inst:DoTaskInTime(2,function() 
+        inst:DoTaskInTime(3,function() 
+            inst:AddTag("bramble_resistant")
             if inst.components.grogginess then
                 inst.components.grogginess.resistance = 100
             end
         end)
     end)
 end)
-
--- AddStategraphPostInit("wilson",function(sg)
--- 	if not TheWorld.ismastersim then return end
---     local old = sg.states.hit.onenter
--- 	sg.states.hit.onenter = function(inst,frozen)
---         if inst.iframes then
---             return
---         else
---             old(inst,frozen)
---             inst.iframes = true
---             sg.states.hit.tags = { "pausepredict", "keepchannelcasting" }
---             inst:DoTaskInTime(0.5,function() 
---                 inst.iframes = false
---                 sg.states.hit.tags = { "busy", "pausepredict", "keepchannelcasting" } 
---             end)
---         end
--- 	end
--- end)
 
 local function onattack_blue(inst,attacker,target)
     if target.components.freezable ~= nil and target:IsValid() then
@@ -168,10 +140,8 @@ AddComponentPostInit("combat", function(self)
             weapon = self:GetWeapon()
         end
 
-        
         stimuli = "blank"
         
-
         return _DoAttack(self, targ, weapon, projectile, stimuli, ...)
     end
 end)
@@ -230,7 +200,6 @@ AddPrefabPostInit("tornado",function(inst)
     if inst.components.locomotor then
         inst.components.locomotor.walkspeed = TUNING.TORNADO_WALK_SPEED * .33
         inst.components.locomotor.runspeed = TUNING.TORNADO_WALK_SPEED * .33
-        inst:SetDuration(TUNING.TORNADO_LIFETIME*1.1)
     end
 end)
 
@@ -267,21 +236,10 @@ if file then
                         chars_count[charname] = decoded_data[charname]
                     end
                 end
-            else
-                print("tumbleweed_data.json содержит не таблицу!")
             end
-        else
-            print("Ошибка декодирования JSON из tumbleweed_data.json")
         end
-    else
-        print("Файл tumbleweed_data.json пуст или не содержит данных.")
     end
-else
-    print("Файл tumbleweed_data.json не найден, используем значения по умолчанию.")
 end
-
-
-
 
 AddPrefabPostInit("world",function(inst)
     if not TheWorld.ismastersim then return end
