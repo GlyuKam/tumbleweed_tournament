@@ -9,9 +9,14 @@ AddPrefabPostInit("wathgrithr",function(inst)
         inst.components.rolemanager:SetCrown()
 
         if inst.currentmask == nil then
+            inst.components.rolemanager:SetRole("mask_foolhat")
             inst.currentmask = "mask_foolhat"
-            inst.components.rolemanager:SetRole(inst.currentmask)
         end
+
+        inst:ListenForEvent("death",function()
+            inst.components.rolemanager:SetRole("mask_foolhat")
+        end)
+
     end
 
     if inst.components.battleborn then

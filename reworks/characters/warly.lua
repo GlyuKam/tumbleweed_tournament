@@ -72,11 +72,11 @@ AddPrefabPostInit("warly",function(inst)
                 local ing = SpawnPrefab(rareings[math.random(1,#rareings)])
                 if ing then
                     ing.Transform:SetPosition(pos.x,10,pos.z)
-                    -- for k, v in pairs(warly.components.inventory.itemslots) do
-                    --     if ing.prefab == v.prefab and ing.prefab ~= "rabbit" and ing.prefab ~= "mole" then 
-                    --         warly.components.inventory:GiveItem(ing)
-                    --     end
-                    -- end
+                    for k, v in pairs(warly.components.inventory.itemslots) do
+                        if ing.prefab == v.prefab and ing.prefab ~= "rabbit" and ing.prefab ~= "mole" and ing.prefab~="lightninggoathorn"then 
+                            warly.components.inventory:GiveItem(ing)
+                        end
+                    end
                 end
             else
                 local ing = SpawnPrefab(ings[math.random(1,#ings)])
@@ -88,11 +88,11 @@ AddPrefabPostInit("warly",function(inst)
                         ing.Transform:SetPosition(pos.x,3,pos.z)
                         inst.sg:Start()
                     end
-                    -- for k, v in pairs(warly.components.inventory.itemslots) do
-                    --     if ing.prefab == v.prefab and ing.prefab ~= "rabbit" and ing.prefab ~= "mole" then 
-                    --         warly.components.inventory:GiveItem(ing)
-                    --     end
-                    -- end
+                    for k, v in pairs(warly.components.inventory.itemslots) do
+                        if ing.prefab == v.prefab and ing.prefab ~= "rabbit" and ing.prefab ~= "mole" then 
+                            warly.components.inventory:GiveItem(ing)
+                        end
+                    end
                 end
             end
         end

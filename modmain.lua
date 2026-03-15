@@ -35,15 +35,22 @@ for _,file in pairs(reworks) do
     modimport("reworks/prefabs/"..file)
 end
 
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WINONA     = {"winona_remote"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WURT       = {"trident"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WEBBER     = {"spidereggsack","monstermeat","monstermeat"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WARLY      = {"glasscutter","portablecookpot_item","portablespicer_item"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WILSON     = {"wathgrithrhat"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WANDA      = {"pocketwatch_heal","pocketwatch_heal"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WX78       = {"wx78_moduleremover","wx78_scanner_item","umbrella"}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WATHGRITHR = {}
-TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.WOODIE     = {}
+local starting_items = TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT
+starting_items.WILSON         = {}
+starting_items.WILLOW         = {}
+starting_items.WENDY          = {}
+starting_items.WOLFGANG       = {}
+starting_items.WX78           = {}
+starting_items.WICKERBOTTOM   = {}
+starting_items.WOODIE         = {}
+starting_items.WATHGRITHR     = {}
+starting_items.WEBBER         = {}
+starting_items.WINONA         = {}
+starting_items.WARLY          = {}
+starting_items.WORTOX         = {}
+starting_items.WORMWOOD       = {}
+starting_items.WURT           = {}
+starting_items.WANDA          = {}
 
 TUNING.WILLOW_LUNAR_FIRE_PLANAR_DAMAGE = 0
 -- TUNING.FIRE_BURST_RANGE = TUNING.FIRE_BURST_RANGE*4

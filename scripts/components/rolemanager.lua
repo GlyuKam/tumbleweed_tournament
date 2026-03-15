@@ -1,48 +1,47 @@
-local function QueenFn(inst)
-    if inst.components.health and inst.components.rolemanager then
+local function QueenFn(inst,data)
+    if not data.target:HasTag("player") or (data.target._p_team_num and data.target._p_team_num:value()~=inst._p_team_num:value()) then
         local rm = inst.components.rolemanager
-        inst.components.health:DoDelta(5*rm.mult*(inst.components.combat.damagemultiplier or 1))
-        rm.mult = rm.mult+(0.075^rm.mult)
+        inst.components.health:DoDelta(5*rm.mult)
+        rm.mult = rm.mult+(0.3^rm.mult)
         inst.components.combat.externaldamagemultipliers:SetModifier(inst, rm.mult)
     end
 end
 
--- local function FoolFn(inst)
--- end
-
-local function TreeFn(inst)
-    if inst.components.combat and inst.components.rolemanager then
-
-        local pos = inst:GetPosition()
-        local attackers = TheSim:FindEntities(pos.x, pos.y, pos.z, 16) 
-        for i, attacker in ipairs(attackers) do
-            if attacker.components.combat and attacker.sg and attacker~=inst then
-                SpawnAt("lucy_transform_fx",attacker)
-                attacker.components.combat:SetTarget(inst)
-            end
-        end
-
+local function Defend(inst)
+    if inst.defender~=nil then
+        inst.defender.components.health:DoDelta(-1)
     end
 end
 
-local function onattacked(inst,data)
-    local fx = SpawnPrefab("bramblefx_armor")
-    fx.entity:SetParent(inst.entity)
-    if data.attacker and data.attacker.components.locomotor then
-        local attacker = data.attacker
-        if attacker.slowfn~=nil then
-            attacker.slowfn:Cancel()
-            attacker.vinefx:Remove()
+local function TreeFn(inst)
+    if inst and inst._p_team_num then
+        for _,player in pairs(AllPlayers) do
+            if player._p_team_num:value() == inst._p_team_num:value() and player~=inst and player.prefab~="wathgrithr" then
+                player.defender = inst
+                player.vinefx = SpawnPrefab("wormwood_vined_debuff")
+                player.vinefx.entity:SetParent(player.entity)
+                player.components.health:SetMinHealth(player.components.health.maxhealth/4)
+
+                player:ListenForEvent("attacked",Defend)
+            end
         end
-        local speed = attacker.components.locomotor.externalspeedmultiplier
-        attacker.vinefx = SpawnPrefab("wormwood_vined_debuff")
-        attacker.components.locomotor.externalspeedmultiplier = speed*0.5
-        attacker.vinefx.entity:SetParent(attacker.entity)
-        attacker.slowfn = attacker:DoTaskInTime(10,function()
-            attacker.components.locomotor.externalspeedmultiplier = speed
-            attacker.vinefx.AnimState:PlayAnimation("spike_pst")
-            attacker.vinefx:ListenForEvent("animover", inst.Remove)
-        end)
+    end
+end
+
+local function UnTreeFn(inst)
+    if inst and inst._p_team_num then
+        for _,player in pairs(AllPlayers) do
+            if player._p_team_num:value() == inst._p_team_num:value() and player~=inst and player.defender == inst then
+                player.defender = nil
+                if player.vinefx~=nil then 
+                    player.vinefx.AnimState:PlayAnimation("spike_pst")
+                    player.vinefx:ListenForEvent("animover", inst.Remove)
+                    player.components.health:SetMinHealth(0)
+
+                    player:RemoveEventCallback("attacked",Defend)
+                end
+            end
+        end
     end
 end
 
@@ -50,59 +49,58 @@ local rolesfn = {
     mask_queenhat = function(inst)
         inst.components.rolemanager:ClearRoles()
 
-        inst.currentmask = "mask_queenhat"
+        inst:DoTaskInTime(0.1,function() 
+            inst.currentmask = "mask_queenhat"
 
-        local fx = SpawnAt("crab_king_shine",inst)
-        fx.Transform:SetScale(2,2,2)
-        inst.crown.AnimState:SetAddColour(0.5,0,0,0.75)
-        inst.components.locomotor.externalspeedmultiplier = 1.1
+            local fx = SpawnAt("crab_king_shine",inst)
+            fx.Transform:SetScale(2,2,2)
+            inst.crown.AnimState:SetAddColour(0.5,0,0,0.75)
+            inst.components.locomotor.externalspeedmultiplier = 1.1
 
-        inst._queentask = nil
-        inst._queentask = inst:DoPeriodicTask(2,function()
-            if inst:IsValid() and inst.components.health and inst.components.combat then
-                inst.components.health:DoDelta(-5*inst.components.rolemanager.mult*(inst.components.combat.damagemultiplier or 1))
-            end
+            inst._queentask = nil
+            inst._queentask = inst:DoPeriodicTask(4,function()
+                if inst:IsValid() and inst.components.health and inst.components.combat then
+                    inst.components.health:DoDelta(-5*inst.components.rolemanager.mult)
+                end
+            end)
+            inst:ListenForEvent("onattackother", QueenFn)
         end)
-        inst:ListenForEvent("onattackother", QueenFn)
     end,
     mask_foolhat = function(inst)
         inst.components.rolemanager:ClearRoles()
 
-        inst.currentmask = "mask_foolhat"
+        inst:DoTaskInTime(0.1,function() 
+            inst.currentmask = "mask_foolhat"
 
-        local fx = SpawnAt("pillowfight_confetti_fx",inst)
-        fx.Transform:SetScale(2,2,2)
-        inst.crown.AnimState:SetAddColour(0,0,0.75,0.75)
-        
+            local fx = SpawnAt("pillowfight_confetti_fx",inst)
+            fx.Transform:SetScale(2,2,2)
+            inst.crown.AnimState:SetAddColour(0,0,0.75,0.75)
+            
 
-        local dodger = inst:AddComponent("attackdodger")
-        dodger:SetCooldownTime(5)
-        dodger:SetOnDodgeFn(function() SpawnAt("pillowfight_confetti_fx",inst) end)
+            local dodger = inst:AddComponent("attackdodger")
+            dodger:SetCooldownTime(5)
+            dodger:SetOnDodgeFn(function() SpawnAt("pillowfight_confetti_fx",inst) end)
 
-        inst._fooltask = nil
+            inst._fooltask = nil
 
-        inst.components.locomotor.externalspeedmultiplier = 1.3
-        inst.components.combat.externaldamagetakenmultipliers:SetModifier(inst, 4)
-        
+            inst.components.locomotor.externalspeedmultiplier = 1.5
+            inst.components.combat.externaldamagetakenmultipliers:SetModifier(inst, 2)
+        end)
     end,
     mask_treehat = function(inst)
         inst.components.rolemanager:ClearRoles()
 
-        inst.currentmask = "mask_treehat"
+        inst:DoTaskInTime(0.1,function() 
+            inst.currentmask = "mask_treehat"
 
-        inst.armorpen = 2
-        inst.components.combat.externaldamagemultipliers:SetModifier(inst, 0.85)
-        
-        inst:ListenForEvent("attacked", onattacked)
-        TreeFn(inst)
-        inst._treetask = inst:DoPeriodicTask(5,function()
+            inst.components.combat.externaldamagemultipliers:SetModifier(inst, 0.75)
+            
             TreeFn(inst)
-        end)
 
-        local fx = SpawnAt("plant_dug_large_fx",inst)
-        fx.Transform:SetScale(2,2,2)
-        inst.crown.AnimState:SetAddColour(0,0.5,0,0.75)
-        
+            local fx = SpawnAt("plant_dug_large_fx",inst)
+            fx.Transform:SetScale(2,2,2)
+            inst.crown.AnimState:SetAddColour(0,0.5,0,0.75)
+        end)
     end, 
 }
 
@@ -117,12 +115,14 @@ end)
 function RoleManager:SetCrown()
     self.owner.crown = SpawnPrefab("cotl_trinket")
     self.owner.crown.entity:AddSoundEmitter()
+
     self.owner.crown.entity:SetParent(self.owner.entity)
     self.owner.crown.Transform:SetPosition(0,3.5,0)
     self.owner.crown.AnimState:SetMultColour(0,0,0,0.75)
     self.owner.crown:AddTag("FX")
     self.owner.crown:AddTag("NOCLICK")
     self.owner.crown:RemoveComponent("inventoryitem")
+
 end
 
 function RoleManager:ClearRoles()
@@ -140,20 +140,20 @@ function RoleManager:ClearRoles()
     self.owner:RemoveEventCallback("onattackother", QueenFn)
     self.mult = 1
 
-    self.owner:RemoveEventCallback("attacked", onattacked)
     self.owner.components.locomotor.externalspeedmultiplier = 1
     self.owner.components.combat.externaldamagetakenmultipliers:SetModifier(self.owner, 1)
     self.owner.components.combat.externaldamagemultipliers:SetModifier(self.owner, 1)
-    self.owner.armorpen = 1
     self.owner.components.health:SetAbsorptionAmount(0)
+    UnTreeFn(self.owner)
 end
 
-local COOLDOWN = 20
+local COOLDOWN = 10
 
 function RoleManager:SetRole(role)
     local fn = rolesfn[role]
-    if fn then
+    if fn and role~=self.owner.currentmask then
         fn(self.owner)
+        self.owner.components.singinginspiration:DoDelta(100)
         self.owner.components.net_role.cooldown:set(true)
         local crown = self.owner.crown
         crown.AnimState:SetMultColour(0,0,0,0.75)
@@ -163,6 +163,8 @@ function RoleManager:SetRole(role)
             crown.SoundEmitter:PlaySound("hookline_2/creatures/boss/crabking/gem_place")
             self.owner.components.net_role.cooldown:set(false)
         end)
+    else
+        self.owner.components.talker:Say("на кой чёрт мне менять роль на ту же самую?")
     end
 end
 
