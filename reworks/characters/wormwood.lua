@@ -6,7 +6,7 @@ AddPrefabPostInit("wormwood",function(inst)
     -- end
     local function Vampire(inst)
         if inst.components.health and not inst.components.health:IsDead() then
-            inst.components.health:DoDelta(3)
+            inst.components.health:DoDelta(1)
         end
     end
     inst:ListenForEvent("onattackother",Vampire)

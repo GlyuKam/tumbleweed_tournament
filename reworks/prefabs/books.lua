@@ -7,6 +7,7 @@ local books = {
     book_fire                  =   "point",
     book_horticulture          =   "point",
     book_horticulture_upgraded =   "point",
+    book_moon                  =   "point",
     book_birds                 =  "target",
     book_silviculture          =  "target",
     book_light                 =  "target",
@@ -14,9 +15,7 @@ local books = {
     book_research_station      =  "target",
     book_web                   =  "attack",
     book_rain                  =  "attack",
-    -- book_moon                  =  "target",
     book_bees                  =  "attack",
-    
 }
 
 local armor = {
@@ -116,7 +115,7 @@ local function toall(inst)
         inst.components.finiteuses:Use(1)
     end
     local owner = inst.components.inventoryitem.owner
-    if owner then
+    if owner and owner.components.sanity then
         owner.components.sanity:DoDelta(-25)
     end
 end
@@ -138,6 +137,7 @@ local fns = {
             local tentacle = SpawnPrefab("tentacle")
             tentacle.Transform:SetPosition(pos.x,pos.y,pos.z)
             tentacle.sg:GoToState("attack_pre")
+            tentacle.components.health.currenthealth = 100
             toall(book)
             inst:Remove()
         end)
@@ -185,9 +185,8 @@ local fns = {
 
         inst:DoTaskInTime(2,function() 
             SpawnAt("fx_book_sleep",book)
-            local bomb = SpawnPrefab("sleepbomb")
+            local bomb = SpawnPrefab("sleepcloud")
             bomb.Transform:SetPosition(pos.x,pos.y,pos.z)
-            bomb.components.complexprojectile:Launch(pos, book)
             toall(book)
             inst:Remove()
         end)
@@ -231,6 +230,7 @@ local fns = {
                     else
                         local fish = SpawnPrefab("shark")
                         fish.Transform:SetPosition(pos.x+offset.x,pos.y,pos.z+offset.z)
+                        fish.sg:GoToState("attack")
                         SpawnAt("hermitcrab_fx_med",fish)
                     end
                 end
@@ -407,68 +407,75 @@ local fns = {
     end, 
 
     book_bees = function(book,attacker,target)
-        if target.slowtask ~= nil then
-            target.slowtask:Cancel()
-        end
-        if target.canceltask ~= nil then
-            target.canceltask:Cancel()
-        end
-        target.slowtask = nil
-        target.canceltask = nil
-        target.slowtask = target:DoPeriodicTask(1,function()
-            local fx = SpawnAt("honey_trail",target)
-            fx:SetVariation(math.random(1,7),math.random(10,17)*0.1,3)
-        end)
-        target.canceltask = target:DoTaskInTime(5,function()
-            target.slowtask:Cancel()
-        end)
-        if target:HasTag("player") and not attacker:HasTag("noknockback") then
+        if target:HasTag("player") and not attacker:HasTag("noknockback") and attacker:HasTag("book_reader") then
+            if target.slowtask ~= nil then
+                target.slowtask:Cancel()
+            end
+            if target.canceltask ~= nil then
+                target.canceltask:Cancel()
+            end
+            target.slowtask = nil
+            target.canceltask = nil
+            target.slowtask = target:DoPeriodicTask(1,function()
+                local fx = SpawnAt("honey_trail",target)
+                fx:SetVariation(math.random(1,7),math.random(10,17)*0.1,3)
+            end)
+            target.canceltask = target:DoTaskInTime(5,function()
+                target.slowtask:Cancel()
+            end)
+        
             target.sg:GoToState("knockback")
             target.Physics:SetMotorVel(20,0,0)
             target:DoTaskInTime(0.5,function() target.Physics:Stop() end)
             target.Transform:SetRotation(attacker.Transform:GetRotation())
             attacker:AddTag("noknockback")
             attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
+            if attacker.components.sanity then
+                attacker.components.sanity:DoDelta(-25)
+            end
         end
     end,
 
     book_web = function(book,attacker,target)
-        if target.spidertask ~= nil then
-            target.spidertask:Cancel()
-        end
-        if target.canceltask ~= nil then
-            target.canceltask:Cancel()
-        end
-        target.spidertask = nil
-        target.canceltask = nil
-        if target.components.inventory then
-            local hat = SpawnPrefab("spiderhat")
-            target.components.inventory:Equip(hat)
-        end
-        target.spidertask = target:DoPeriodicTask(0.5,function()
-            local pos = Vector3(target.Transform:GetWorldPosition())
-            local offset = FindWalkableOffset(pos,  math.random() * PI2, math.random(1,5), 8, false, true)
-            if offset then
-                local spider = SpawnPrefab("spider_"..spiders[math.random(#spiders)])
-                spider.Transform:SetPosition(pos.x+offset.x,0,pos.z+offset.z)
-                SpawnAt("round_puff_fx_hi",spider)
-            end    
-        end)
-        target.canceltask = target:DoTaskInTime(1.5,function()
-            target.spidertask:Cancel()
-        end)
-        if target:HasTag("player") and not attacker:HasTag("noknockback") then
+        if target:HasTag("player") and not attacker:HasTag("noknockback") and attacker:HasTag("book_reader") then
+            if target.spidertask ~= nil then
+                target.spidertask:Cancel()
+            end
+            if target.canceltask ~= nil then
+                target.canceltask:Cancel()
+            end
+            target.spidertask = nil
+            target.canceltask = nil
+            if target.components.inventory then
+                local hat = SpawnPrefab("spiderhat")
+                target.components.inventory:Equip(hat)
+            end
+            target.spidertask = target:DoPeriodicTask(0.5,function()
+                local pos = Vector3(target.Transform:GetWorldPosition())
+                local offset = FindWalkableOffset(pos,  math.random() * PI2, math.random(1,5), 8, false, true)
+                if offset then
+                    local spider = SpawnPrefab("spider_"..spiders[math.random(#spiders)])
+                    spider.Transform:SetPosition(pos.x+offset.x,0,pos.z+offset.z)
+                    SpawnAt("round_puff_fx_hi",spider)
+                end    
+            end)
+            target.canceltask = target:DoTaskInTime(1.5,function()
+                target.spidertask:Cancel()
+            end)
             target.sg:GoToState("knockback")
             target.Physics:SetMotorVel(20,0,0)
             target:DoTaskInTime(0.5,function() target.Physics:Stop() end)
             target.Transform:SetRotation(attacker.Transform:GetRotation())
             attacker:AddTag("noknockback")
             attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
+            if attacker.components.sanity then
+                attacker.components.sanity:DoDelta(-25)
+            end
         end
     end,
 
     book_rain = function(book,attacker,target)
-        if target:HasTag("player") and not attacker:HasTag("noknockback") then
+        if target:HasTag("player") and not attacker:HasTag("noknockback") and attacker:HasTag("book_reader") then
             target.sg:GoToState("knockback")
             target.Transform:SetRotation(attacker.Transform:GetRotation())
             target.Physics:SetMotorVel(30,0,0)
@@ -476,6 +483,9 @@ local fns = {
             target:DoTaskInTime(0.5,function() target.Physics:Stop() ChangeToCharacterPhysics(target) end)
             attacker:AddTag("noknockback")
             attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
+            if attacker.components.sanity then
+                attacker.components.sanity:DoDelta(-25)
+            end
         end
     end,
 
@@ -499,6 +509,35 @@ local fns = {
                 end
                 toall(book)
             end
+        end)
+    end,
+
+    book_moon = function(book,hz,pos)
+        if not book:HasTag("canread") then return end
+        local inst = createinst(pos)
+
+        SpawnAt("fx_book_moon",book)
+        inst:DoTaskInTime(2,function() 
+            local task = nil
+            task = inst:DoPeriodicTask(1,function()
+                local offset = FindWalkableOffset(pos,  math.random() * PI2, math.random(1,5), 8, false, true)
+                if offset then
+                    if math.random(0,100) < 95 then
+                        local meteor = SpawnPrefab("shadowmeteor")
+                        meteor:DoTaskInTime(0.1,function() 
+                            meteor.loot =  { {prefab = "rock_moon",chance = 0.1},{prefab = "moonrocknugget",chance = 0.9},}
+                        end)
+                        meteor.Transform:SetPosition(pos.x+offset.x,0,pos.z+offset.z)
+                    else
+                        local meteor = SpawnPrefab("rock_moon_shell")
+                        meteor.Transform:SetPosition(pos.x+offset.x,0,pos.z+offset.z)
+                        SpawnAt("round_puff_fx_hi",meteor)
+                    end
+                end
+            end)
+            inst:DoTaskInTime(5,function() task:Cancel() inst:Remove() end)
+
+            toall(book)
         end)
     end,
 
@@ -532,13 +571,16 @@ for book,value in pairs(books) do
         weapon.attackrange = 0.5
         weapon.hitrange = 0.5
         weapon:SetOnAttack(function(inst,attacker,target)
-            if target:HasTag("player") and not attacker:HasTag("noknockback") then
+            if target:HasTag("player") and not attacker:HasTag("noknockback") and attacker:HasTag("book_reader") then 
                 target.sg:GoToState("knockback")
                 target.Physics:SetMotorVel(20,0,0)
                 target:DoTaskInTime(0.5,function() target.Physics:Stop() end)
                 target.Transform:SetRotation(attacker.Transform:GetRotation())
                 attacker:AddTag("noknockback")
                 attacker:DoTaskInTime(20,function() attacker:RemoveTag("noknockback") end)
+                if attacker.components.sanity then
+                    attacker.components.sanity:DoDelta(-25)
+                end
             end
         end)
 

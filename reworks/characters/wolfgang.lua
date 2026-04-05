@@ -155,20 +155,8 @@ local function onthrown(inst)
 	)
 end
 
--- local function MakeTossable(inst)
---     if inst.components.complexprojectile == nil then
---         inst:AddComponent("complexprojectile")
---         inst.components.complexprojectile:SetHorizontalSpeed(60)
---         inst.components.complexprojectile:SetGravity(-35)
---         inst.components.complexprojectile:SetLaunchOffset(Vector3(1, 1, 0))
---         inst.components.complexprojectile:SetOnLaunch(inst.onthrown)
---         inst.components.complexprojectile:SetOnHit(inst.OnThrownHit)
--- 		inst.components.complexprojectile.ismeleeweapon = true
---     end
--- end
-
 dumbbels = {
-    -- "dumbbell",
+    "dumbbell",
     "dumbbell_golden",
     "dumbbell_marble",
     "dumbbell_gem",
@@ -183,21 +171,14 @@ for _,bell in pairs(dumbbels) do
         inst.onthrown = onthrown
         inst.OnThrownHit = OnThrownHit
         inst.task = nil
-        inst.task = inst:DoPeriodicTask(1,function() 
-            if inst.components.complexprojectile then
-                inst.components.complexprojectile:SetHorizontalSpeed(50) 
-                inst.components.complexprojectile:SetOnLaunch(inst.onthrown)
-                inst.components.complexprojectile:SetOnHit(inst.OnThrownHit)
-            else
-                inst:AddComponent("complexprojectile")
-                inst.components.complexprojectile:SetHorizontalSpeed(50)
-                inst.components.complexprojectile:SetGravity(-35)
-                inst.components.complexprojectile:SetLaunchOffset(Vector3(1, 1, 0))
-                inst.components.complexprojectile:SetOnLaunch(inst.onthrown)
-                inst.components.complexprojectile:SetOnHit(inst.OnThrownHit)
-                inst.components.complexprojectile.ismeleeweapon = true
-            end
-        end)
+
+        inst:AddComponent("complexprojectile")
+        inst.components.complexprojectile:SetHorizontalSpeed(50)
+        inst.components.complexprojectile:SetGravity(-35)
+        inst.components.complexprojectile:SetLaunchOffset(Vector3(1, 1, 0))
+        inst.components.complexprojectile:SetOnLaunch(inst.onthrown)
+        inst.components.complexprojectile:SetOnHit(inst.OnThrownHit)
+        inst.components.complexprojectile.ismeleeweapon = true
 
         inst.components.equippable:SetOnEquip(function(inst, owner)
             owner.AnimState:OverrideSymbol("swap_object", inst.swap_dumbbell, inst.swap_dumbbell_symbol)
@@ -213,13 +194,41 @@ for _,bell in pairs(dumbbels) do
                 owner:PushEvent("stopliftingdumbbell", {instant = true})
             end
         end)
+
+        local OnPickup = UpvalueHacker.GetUpvalue(_G.Prefabs.dumbbell.fn,"OnPickup")
+        inst:RemoveEventCallback("onputininventory", OnPickup)
     end)
 end
 
--- AddPrefabPostInit("wolfgang",function(inst) 
---     inst:DoPeriodicTask(1,function()
---         if inst.components.hunger then
---             inst.components.hunger:DoDelta(-0.5)
---         end
---     end)
--- end)
+local function RecalculatePlanarDamage(inst)
+    local item = inst.components.inventory:GetEquippedItem(EQUIPSLOTS.HANDS)
+	if item and
+		item.components.planardamage and
+		item.components.planardamage:GetDamage() > 0 and
+		inst.components.mightiness:IsMighty() and
+		not item:HasTag("magicweapon")
+	then
+		item.components.planardamage:AddBonus(inst,
+			(inst.components.skilltreeupdater:IsActivated("wolfgang_planardamage_1") and TUNING.SKILLS.WOLFGANG_PLANARDAMAGE_1 or 0)/3 +
+			(inst.components.skilltreeupdater:IsActivated("wolfgang_planardamage_2") and TUNING.SKILLS.WOLFGANG_PLANARDAMAGE_2 or 0)/3 +
+			(inst.components.skilltreeupdater:IsActivated("wolfgang_planardamage_3") and TUNING.SKILLS.WOLFGANG_PLANARDAMAGE_3 or 0)/3 +
+			(inst.components.skilltreeupdater:IsActivated("wolfgang_planardamage_4") and TUNING.SKILLS.WOLFGANG_PLANARDAMAGE_4 or 0)/3 +
+			(inst.components.skilltreeupdater:IsActivated("wolfgang_planardamage_5") and TUNING.SKILLS.WOLFGANG_PLANARDAMAGE_5 or 0)/3,
+			"wolfgang_planardamage"
+		)
+	else
+		item = nil
+    end
+
+	local olditem = inst._mightyplanarweapon
+	if olditem ~= item then
+		if olditem ~= nil and olditem.components.planardamage ~= nil then
+			olditem.components.planardamage:RemoveBonus(inst, "wolfgang_planardamage")
+		end
+		inst._mightyplanarweapon = item
+	end
+end
+
+AddPrefabPostInit("wolfgang",function(inst) 
+    inst.RecalculatePlanarDamage = RecalculatePlanarDamage
+end)

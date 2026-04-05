@@ -17,6 +17,10 @@ AddPrefabPostInit("wathgrithr",function(inst)
             inst.components.rolemanager:SetRole("mask_foolhat")
         end)
 
+        inst:ListenForEvent("ms_playerleft",function()
+            inst.components.rolemanager:SetRole("mask_foolhat")
+        end)
+
     end
 
     if inst.components.battleborn then
@@ -27,24 +31,6 @@ AddPrefabPostInit("wathgrithr",function(inst)
         inst.components.health:SetAbsorptionAmount(0)
     end
 
-    local oldSave = inst.OnSave
-    local oldLoad = inst.OnLoad
-
-    inst.OnSave = function(inst,data)
-        if oldSave then
-            oldSave(inst,data)
-        end
-        data.currentmask = inst.currentmask
-    end
-    inst.OnLoad = function(inst,data)
-        if oldLoad then
-            oldLoad(inst,data)
-        end
-        inst.currentmask = data.currentmask
-        if inst.components.rolemanager then
-            inst.components.rolemanager:SetRole(inst.currentmask)
-        end
-    end
 end)
 
 AddPrefabPostInit("spear_wathgrithr_lightning",function(inst)

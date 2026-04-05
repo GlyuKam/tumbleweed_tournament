@@ -10,6 +10,6 @@ end)
 AddPrefabPostInit("pocketwatch_weapon",function(inst)
     if inst.components.fueled then
         inst.components.fueled:SetPercent(0)
-        inst.components.fueled.bonusmult = 0.1
+        inst.components.fueled.bonusmult = 0.2
     end
 end)

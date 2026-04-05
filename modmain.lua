@@ -1,5 +1,7 @@
 GLOBAL.setmetatable(env,{__index=function(t,k) return GLOBAL.rawget(GLOBAL,k) end})
 
+_G.UpvalueHacker = require("upvaluehacker")
+
 PrefabFiles={"throwable_lucy"}
 
 local available_chars = {
@@ -56,7 +58,6 @@ TUNING.WILLOW_LUNAR_FIRE_PLANAR_DAMAGE = 0
 -- TUNING.FIRE_BURST_RANGE = TUNING.FIRE_BURST_RANGE*4
 
 TUNING.WINONA_CATAPULT_MAX_RANGE = TUNING.WINONA_CATAPULT_MAX_RANGE*4
-TUNING.WINONA_CATAPULT_HEALTH = TUNING.WINONA_CATAPULT_HEALTH*10
 
 ACTIONS.TOSS.distance=100 
 ACTIONS.CASTAOE.distance=100 
@@ -67,12 +68,10 @@ TUNING.OPALSTAFF_STAR_DURATION = 5*60
 
 TUNING.WORMWOOD_ROOT_TIME = 0.5
 
-TUNING.TENTACLE_HEALTH = TUNING.TENTACLE_HEALTH/5
-
---====================== PREFABS ================================================================
-
+-- ==================== WIDGETS =================================================================
 
 local Roles = require "widgets/wiga_widget"
+local Razor = require "widgets/wendy_widget"
 
 AddClassPostConstruct("widgets/controls", function(self)
     if self.owner.prefab == "wathgrithr" then
@@ -80,24 +79,36 @@ AddClassPostConstruct("widgets/controls", function(self)
         self.roles:SetPosition(0, 0)
         self.roles:MoveToBack()
     end
+    if self.owner.prefab == "wendy" then
+        self.razor = self.inv:AddChild(Razor(self.owner))
+        self.razor:SetPosition(0, 0)
+        self.razor:MoveToBack()
+    end
 end)
-
 
 local function changerole(inst,role)
     if inst.components.rolemanager and inst.components.net_role then
+        if inst.components.net_role.cooldown:value() == true then return end
         inst.components.rolemanager:SetRole(role)
+    end
+end
+
+local function selfharm(inst)
+    if inst.components.health and inst.components.combat and inst.components.selfharmer then
+        if inst.components.health.invincible or inst.defender~=nil then return end
+        inst.components.health:DoDelta(-10)
+        inst.components.selfharmer:UpdateDamage(0.01)
     end
 end
 
 AddModRPCHandler("ROLES","CHANGEROLE",changerole)
 
+AddModRPCHandler("WENDY","SELFHARM",selfharm)
+
+--====================== PREFABS ================================================================
+
 AddPlayerPostInit(function(inst)
-
-    -- if not inst then return end
-    --     inst:DoTaskInTime(2, function()
-    --     TheCamera:SetExtraMaxDistance(55)
-    -- end)
-
+    
     inst:AddTag("bramble_resistant")
 
     if inst.components.grogginess then
@@ -112,6 +123,24 @@ AddPlayerPostInit(function(inst)
         end)
     end)
 end)
+
+local function SpawnSleepBombs(pos)
+    local offset = FindWalkableOffset(pos,  math.random() * PI2, math.random(2,8), 20, false, true)
+    if offset then
+        local bomb = SpawnPrefab("mushroombomb_dark_projectile")
+        bomb.Transform:SetPosition(pos.x,pos.y,pos.z)
+        local targ = SpawnPrefab("rocks")
+        targ.Transform:SetPosition(pos.x+offset.x,pos.y+offset.y,pos.z+offset.z)
+        bomb.components.complexprojectile:Launch(targ:GetPosition(), nil , nil)
+        targ:Remove()
+    end
+end
+
+function _G.SpawnBombs(pos,inst)
+    local task = nil
+    task = inst:DoPeriodicTask(0.5,function() SpawnSleepBombs(pos) end)
+    inst:DoTaskInTime(6,function() task:Cancel() end)
+end
 
 local function onattack_blue(inst,attacker,target)
     if target.components.freezable ~= nil and target:IsValid() then

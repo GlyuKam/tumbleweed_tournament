@@ -1,0 +1,6 @@
+﻿<Atlas>
+	<Texture filename="mask_of_fear.tex"/>
+	<Elements>
+		<Element name="mask_of_fear.tex" u1="0" u2="1" v1="0" v2="1"/>
+	</Elements>
+</Atlas>

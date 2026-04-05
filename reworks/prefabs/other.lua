@@ -9,3 +9,9 @@ AddPrefabPostInit("wardrobe",function(inst)
     inst:AddComponent("activatable")
     inst.components.activatable.OnActivate = fn 
 end)
+
+AddPrefabPostInit("moonrockseed",function(inst)
+    if inst.DoUpgrade then
+        inst:DoUpgrade()
+    end
+end)

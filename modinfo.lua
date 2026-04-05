@@ -1,7 +1,7 @@
 name = "Tumbleweed tweaks"
 description = [[ RNG ЧИСТИЛИЩЕ]]
 author = "Тот Самый ГлюК, Potatishe"
-version = "1.1.4.1"
+version = "1.0.0.5"
 forumthread = ""
 dst_compatible = true
 dont_starve_compatible = false

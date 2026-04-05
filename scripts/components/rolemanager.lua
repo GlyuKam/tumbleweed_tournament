@@ -1,15 +1,17 @@
 local function QueenFn(inst,data)
     if not data.target:HasTag("player") or (data.target._p_team_num and data.target._p_team_num:value()~=inst._p_team_num:value()) then
         local rm = inst.components.rolemanager
-        inst.components.health:DoDelta(5*rm.mult)
-        rm.mult = rm.mult+(0.3^rm.mult)
+        rm.mult = rm.mult+(0.175^rm.mult)
         inst.components.combat.externaldamagemultipliers:SetModifier(inst, rm.mult)
+        inst.components.singinginspiration.gainratemultipliers:SetModifier(inst, rm.mult)
     end
 end
 
 local function Defend(inst)
-    if inst.defender~=nil then
-        inst.defender.components.health:DoDelta(-1)
+    if inst.components.health.currenthealth<(inst.components.health.maxhealth/4+1) then
+        if inst.defender~=nil and inst.defender:IsValid() then
+            inst.defender.components.health:DoDelta(-4)
+        end
     end
 end
 
@@ -55,14 +57,8 @@ local rolesfn = {
             local fx = SpawnAt("crab_king_shine",inst)
             fx.Transform:SetScale(2,2,2)
             inst.crown.AnimState:SetAddColour(0.5,0,0,0.75)
-            inst.components.locomotor.externalspeedmultiplier = 1.1
 
-            inst._queentask = nil
-            inst._queentask = inst:DoPeriodicTask(4,function()
-                if inst:IsValid() and inst.components.health and inst.components.combat then
-                    inst.components.health:DoDelta(-5*inst.components.rolemanager.mult)
-                end
-            end)
+            inst.components.combat.externaldamagetakenmultipliers:SetModifier(inst, 1.25)
             inst:ListenForEvent("onattackother", QueenFn)
         end)
     end,
@@ -78,13 +74,14 @@ local rolesfn = {
             
 
             local dodger = inst:AddComponent("attackdodger")
-            dodger:SetCooldownTime(5)
-            dodger:SetOnDodgeFn(function() SpawnAt("pillowfight_confetti_fx",inst) end)
+            dodger:SetCooldownTime(8)
+            dodger:SetOnDodgeFn(function() 
+                SpawnAt("pillowfight_confetti_fx",inst) 
+                inst.components.grogginess:AddGrogginess(1.2)
+                inst:DoTaskInTime(6,function() inst.components.locomotor.externalspeedmultiplier = 1.35 end)
+            end)
 
-            inst._fooltask = nil
-
-            inst.components.locomotor.externalspeedmultiplier = 1.5
-            inst.components.combat.externaldamagetakenmultipliers:SetModifier(inst, 2)
+            inst.components.locomotor.externalspeedmultiplier = 1.35
         end)
     end,
     mask_treehat = function(inst)
@@ -92,8 +89,6 @@ local rolesfn = {
 
         inst:DoTaskInTime(0.1,function() 
             inst.currentmask = "mask_treehat"
-
-            inst.components.combat.externaldamagemultipliers:SetModifier(inst, 0.75)
             
             TreeFn(inst)
 
@@ -126,19 +121,12 @@ function RoleManager:SetCrown()
 end
 
 function RoleManager:ClearRoles()
-    if self.owner._queentask~=nil then
-        self.owner._queentask:Cancel()
-    end
-    if self.owner._fooltask~=nil then
-        self.owner._fooltask:Cancel()
-    end
-    if self.owner._treetask~=nil then
-        self.owner._treetask:Cancel()
-    end
+
     self.owner:RemoveComponent("attackdodger")
     self.owner.components.combat.externaldamagemultipliers:SetModifier(self.owner, 1)
     self.owner:RemoveEventCallback("onattackother", QueenFn)
     self.mult = 1
+    self.owner.components.singinginspiration.gainratemultipliers:SetModifier(self.owner, 0)
 
     self.owner.components.locomotor.externalspeedmultiplier = 1
     self.owner.components.combat.externaldamagetakenmultipliers:SetModifier(self.owner, 1)
@@ -153,7 +141,7 @@ function RoleManager:SetRole(role)
     local fn = rolesfn[role]
     if fn and role~=self.owner.currentmask then
         fn(self.owner)
-        self.owner.components.singinginspiration:DoDelta(100)
+        self.owner.components.singinginspiration:DoDelta(10)
         self.owner.components.net_role.cooldown:set(true)
         local crown = self.owner.crown
         crown.AnimState:SetMultColour(0,0,0,0.75)
